@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#AAC4F5">
+    <meta name="description" content="Aplikasi manajemen perlengkapan konten untuk influencer">
+    <title>yohan's - Perlengkapan Konten</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <link rel="manifest" href="#" id="manifest-placeholder">
+    
+    <style>
+        :root {
+            --blue: #AAC4F5;
+            --cream: #FFF8DE;
+            --dark-bg: #1a1a2e;
+            --dark-card: #16213e;
+        }
+        
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        body {
+            background-color: var(--cream);
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        
+        body.dark-mode {
+            background-color: var(--dark-bg);
+            color: #fff;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--blue) 0%, #89a8d8 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        body.dark-mode .navbar {
+            background: linear-gradient(135deg, #4a5d7a 0%, #2d3e5f 100%);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background-color: white;
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        body.dark-mode .card {
+            background-color: var(--dark-card);
+            color: #fff;
+        }
+        
+        .card-header {
+            background-color: var(--blue);
+            color: #333;
+            border-radius: 15px 15px 0 0 !important;
+            font-weight: 600;
+        }
+        
+        body.dark-mode .card-header {
+            background-color: #2d3e5f;
+            color: #fff;
+        }
+        
+        .btn-primary {
+            background-color: var(--blue);
+            border-color: var(--blue);
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            background-color: #89a8d8;
+            border-color: #89a8d8;
+            color: #333;
+        }
+        
+        body.dark-mode .btn-primary {
+            background-color: #4a5d7a;
+            border-color: #4a5d7a;
+            color: #fff;
+        }
+        
+        body.dark-mode .btn-primary:hover {
+            background-color: #5b6f8f;
+            border-color: #5b6f8f;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid var(--blue);
+        }
+        
+        body.dark-mode .form-control,
+        body.dark-mode .form-select {
+            background-color: var(--dark-bg);
+            color: #fff;
+            border-color: #4a5d7a;
+        }
+        
+        .item-card {
+            cursor: move;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .item-card.dragging {
+            opacity: 0.5;
+        }
+        
+        .loading-spinner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid var(--cream);
+            border-top: 5px solid var(--blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .badge {
+            font-size: 0.85rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        @media (max-width: 768px) {
+            .card {
+                border-radius: 10px;
+            }
+            
+            .item-card {
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark sticky-top">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="bi bi-camera-video-fill"></i> yohan's
+            </span>
+            <div>
+                <button class="btn btn-outline-light btn-sm me-2" id="installBtn" style="display: none;">
+                    <i class="bi bi-download"></i> Install
+                </button>
+                <button class="btn btn-outline-light btn-sm" id="darkModeToggle">
+                    <i class="bi bi-moon-fill"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container py-4">
+        <!-- Form Input -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-plus-circle"></i> Tambah Perlengkapan
+            </div>
+            <div class="card-body">
+                <form id="itemForm">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Perlengkapan</label>
+                        <input type="text" class="form-control" id="itemName" placeholder="Contoh: Kamera DSLR" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kategori</label>
+                        <select class="form-select" id="itemCategory" required>
+                            <option value="">Pilih Kategori</option>
+                            <option value="Kamera">📷 Kamera</option>
+                            <option value="Lighting">💡 Lighting</option>
+                            <option value="Audio">🎤 Audio</option>
+                            <option value="Aksesoris">🎬 Aksesoris</option>
+                            <option value="Editing">💻 Editing</option>
+                            <option value="Lainnya">📦 Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="itemStatus" required>
+                            <option value="Tersedia">✅ Tersedia</option>
+                            <option value="Digunakan">🔄 Digunakan</option>
+                            <option value="Maintenance">🔧 Maintenance</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Catatan (opsional)</label>
+                        <textarea class="form-control" id="itemNotes" rows="2" placeholder="Tambahkan catatan..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-save"></i> Simpan Data
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Filter -->
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <select class="form-select" id="filterCategory">
+                            <option value="">Semua Kategori</option>
+                            <option value="Kamera">📷 Kamera</option>
+                            <option value="Lighting">💡 Lighting</option>
+                            <option value="Audio">🎤 Audio</option>
+                            <option value="Aksesoris">🎬 Aksesoris</option>
+                            <option value="Editing">💻 Editing</option>
+                            <option value="Lainnya">📦 Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <select class="form-select" id="filterStatus">
+                            <option value="">Semua Status</option>
+                            <option value="Tersedia">✅ Tersedia</option>
+                            <option value="Digunakan">🔄 Digunakan</option>
+                            <option value="Maintenance">🔧 Maintenance</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Katalog -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-grid-3x3-gap-fill"></i> Katalog Perlengkapan
+                <span class="badge bg-dark float-end" id="itemCount">0 item</span>
+            </div>
+            <div class="card-body">
+                <div id="itemsList" class="row g-3">
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <p>Belum ada perlengkapan. Tambahkan sekarang!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Data Storage
+        let items = JSON.parse(localStorage.getItem('yohansItems')) || [];
+        let draggedElement = null;
+        let deferredPrompt;
+        
+        // Dark Mode
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const body = document.body;
+        const isDarkMode = localStorage.getItem('darkMode') === 'true';
+        
+        if (isDarkMode) {
+            body.classList.add('dark-mode');
+            darkModeToggle.innerHTML = '<i class="bi bi-sun-fill"></i>';
+        }
+        
+        darkModeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+            darkModeToggle.innerHTML = isDark ? '<i class="bi bi-sun-fill"></i>' : '<i class="bi bi-moon-fill"></i>';
+        });
+        
+        // Form Submit
+        document.getElementById('itemForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            showLoading();
+            
+            setTimeout(() => {
+                const item = {
+                    id: Date.now(),
+                    name: document.getElementById('itemName').value,
+                    category: document.getElementById('itemCategory').value,
+                    status: document.getElementById('itemStatus').value,
+                    notes: document.getElementById('itemNotes').value,
+                    createdAt: new Date().toISOString()
+                };
+                
+                items.push(item);
+                saveToLocalStorage();
+                renderItems();
+                e.target.reset();
+                hideLoading();
+                
+                // Show success feedback
+                showToast('Data berhasil disimpan!');
+            }, 500);
+        });
+        
+        // Save to LocalStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('yohansItems', JSON.stringify(items));
+        }
+        
+        // Render Items
+        function renderItems() {
+            const itemsList = document.getElementById('itemsList');
+            const filterCategory = document.getElementById('filterCategory').value;
+            const filterStatus = document.getElementById('filterStatus').value;
+            
+            let filteredItems = items.filter(item => {
+                const categoryMatch = !filterCategory || item.category === filterCategory;
+                const statusMatch = !filterStatus || item.status === filterStatus;
+                return categoryMatch && statusMatch;
+            });
+            
+            document.getElementById('itemCount').textContent = `${filteredItems.length} item`;
+            
+            if (filteredItems.length === 0) {
+                itemsList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <p>Tidak ada perlengkapan yang sesuai filter.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            itemsList.innerHTML = filteredItems.map(item => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card item-card" draggable="true" data-id="${item.id}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-grip-vertical text-muted"></i>
+                                    ${item.name}
+                                </h5>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteItem(${item.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-primary">${item.category}</span>
+                                <span class="badge ${getStatusColor(item.status)}">${item.status}</span>
+                            </div>
+                            ${item.notes ? `<p class="card-text small text-muted mb-0">${item.notes}</p>` : ''}
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-clock"></i> ${formatDate(item.createdAt)}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add drag and drop listeners
+            document.querySelectorAll('.item-card').forEach(card => {
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+                card.addEventListener('dragover', handleDragOver);
+                card.addEventListener('drop', handleDrop);
+            });
+        }
+        
+        // Drag and Drop Functions
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+        }
+        
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+        
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            if (draggedElement !== this) {
+                const draggedId = parseInt(draggedElement.dataset.id);
+                const targetId = parseInt(this.dataset.id);
+                
+                const draggedIndex = items.findIndex(item => item.id === draggedId);
+                const targetIndex = items.findIndex(item => item.id === targetId);
+                
+                // Swap items
+                [items[draggedIndex], items[targetIndex]] = [items[targetIndex], items[draggedIndex]];
+                
+                saveToLocalStorage();
+                renderItems();
+            }
+            
+            return false;
+        }
+        
+        // Delete Item
+        function deleteItem(id) {
+            if (confirm('Hapus perlengkapan ini?')) {
+                showLoading();
+                setTimeout(() => {
+                    items = items.filter(item => item.id !== id);
+                    saveToLocalStorage();
+                    renderItems();
+                    hideLoading();
+                    showToast('Data berhasil dihapus!');
+                }, 300);
+            }
+        }
+        
+        // Helper Functions
+        function getStatusColor(status) {
+            const colors = {
+                'Tersedia': 'bg-success',
+                'Digunakan': 'bg-warning',
+                'Maintenance': 'bg-secondary'
+            };
+            return colors[status] || 'bg-info';
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+        }
+        
+        function showLoading() {
+            document.getElementById('loadingSpinner').classList.add('active');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingSpinner').classList.remove('active');
+        }
+        
+        function showToast(message) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed top-0 start-50 translate-middle-x mt-3 alert alert-success';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = `<i class="bi bi-check-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }
+        
+        // Filter Events
+        document.getElementById('filterCategory').addEventListener('change', renderItems);
+        document.getElementById('filterStatus').addEventListener('change', renderItems);
+        
+        // PWA Install
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'inline-block';
+        });
+        
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                document.getElementById('installBtn').style.display = 'none';
+            }
+        });
+        
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = 'yohans-v1';
+                    const urlsToCache = ['/'];
+                    
+                    self.addEventListener('install', event => {
+                        event.waitUntil(
+                            caches.open(CACHE_NAME)
+                                .then(cache => cache.addAll(urlsToCache))
+                        );
+                    });
+                    
+                    self.addEventListener('fetch', event => {
+                        event.respondWith(
+                            caches.match(event.request)
+                                .then(response => response || fetch(event.request))
+                        );
+                    });
+                `;
+                
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swUrl);
+            });
+        }
+        
+        // Manifest
+        const manifest = {
+            name: "yohan's - Perlengkapan Konten",
+            short_name: "yohan's",
+            description: "Aplikasi manajemen perlengkapan konten untuk influencer",
+            start_url: "/",
+            display: "standalone",
+            background_color: "#FFF8DE",
+            theme_color: "#AAC4F5",
+            icons: [
+                {
+                    src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23AAC4F5' width='100' height='100'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle' fill='%23333'%3E📹%3C/text%3E%3C/svg%3E",
+                    sizes: "512x512",
+                    type: "image/svg+xml"
+                }
+            ]
+        };
+        
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        document.getElementById('manifest-placeholder').setAttribute('href', manifestUrl);
+        
+        // Initial Render
+        renderItems();
+    </script>
+</body>
+</html>
